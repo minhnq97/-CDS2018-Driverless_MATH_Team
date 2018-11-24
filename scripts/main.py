@@ -7,6 +7,7 @@ from std_msgs.msg import Float32
 from sensor_msgs.msg import CompressedImage
 # our code import
 import detectlane 
+import lanefilter
 import carcontrol
 
 class image:
@@ -22,13 +23,14 @@ class image:
         # CODE START FROM HERE
         lane = detectlane.Lane()
         lane.imgProcess(image_np)
-        leftLane = lane.getLeftLane()
-        rightLane = lane.getRightLane()
+        
+        # leftLane = lane.getLeftLane()
+        # rightLane = lane.getRightLane()
 
-        car = carcontrol.Car(leftLane, rightLane)
-        e,v = car.carControl()
-        self.speed_pub.publish(v)
-        self.steerAngle_pub.publish(e)
+        # car = carcontrol.Car(leftLane, rightLane)
+        # e,v = car.carControl()
+        # self.speed_pub.publish(v)
+        # self.steerAngle_pub.publish(e)
 
         cv2.waitKey(2)
         

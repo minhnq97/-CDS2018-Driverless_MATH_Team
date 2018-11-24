@@ -5,6 +5,8 @@ import math
 
 import detectshadow
 import constant as const
+import lanefilter
+import curve
 
 class Lane:
     slideThickness = 10
@@ -34,8 +36,22 @@ class Lane:
         canny = self.cannyEdgeDetection(smoothImg)
         houghTransform(canny,image_np)'''
         # --- test 3 ---- Minhnq
-        hsvImg = self.toHsvImg(image_np)
-        birdView = self.birdViewTransform(hsvImg)
+        p = { 'sat_thresh': 120, 'light_thresh': 40, 'light_thresh_agr': 205,
+            'grad_thresh': (0.7, 1.4), 'mag_thresh': 40, 'x_thresh': 20 }        
+        filtered = lanefilter.LaneFilter(p)
+        processedImage = filtered.apply(image_np)
+        birdView = self.birdViewTransform(processedImage)
+
+        # hsvImg = self.toHsvImg(image_np)
+        
+        cv2.imshow('bird', processedImage)
+        # Sliding window technique
+        # curves = curve.Curves(number_of_windows = 10, margin = 5, minimum_pixels = 20)
+        # res = curves.fit(birdView[:,:])
+        # self.leftLane, self.rightLane = res['leftlane'], res['rightlane']
+        # End sliding window technique
+
+        # Collect point traditionally
         layers = self.splitLayer(birdView, const.LANE_VERTICAL)
         points = self.centerRoadSide(layers)
         self.leftLane, self.rightLane = self.detectLeftRight(points)
@@ -47,10 +63,10 @@ class Lane:
         for i in range(len(self.rightLane)):
             if (self.rightLane[i] != None):
                 cv2.circle(birdPoints, self.rightLane[i],2,(0,0,255),thickness=1, lineType=8)
+        # End collect point
 
         #show
-        cv2.imshow('test img', image_np)
-        cv2.imshow('bird', birdView)
+        cv2.imshow('img',image_np)
         cv2.imshow('point',birdPoints)
 
     def preProcess(self, img):
@@ -102,6 +118,19 @@ class Lane:
         dst_vertices[1] = np.asarray((const.LANE_BIRDVIEW_WIDTH, 0))
         dst_vertices[2] = np.asarray((const.LANE_BIRDVIEW_WIDTH - 105, const.LANE_BIRDVIEW_HEIGHT))
         dst_vertices[3] = np.asarray((105, const.LANE_BIRDVIEW_HEIGHT))
+
+        # Test new birdView
+        # src_vertices[0] = np.asarray((110, const.LANE_SKYLINE))
+        # src_vertices[1] = np.asarray((240, const.LANE_SKYLINE))
+        # src_vertices[2] = np.asarray((width, height))
+        # src_vertices[3] = np.asarray((0, height))
+
+        # dst_vertices = np.zeros((4, 2), dtype = "float32")
+        # dst_vertices[0] = np.asarray((40,0))
+        # dst_vertices[1] = np.asarray((280, 0))
+        # dst_vertices[2] = np.asarray((280, 240))
+        # dst_vertices[3] = np.asarray((40, 240))
+        # # End test new birdView
 
         M = cv2.getPerspectiveTransform(src_vertices, dst_vertices)
         warped = cv2.warpPerspective(img, M, (const.LANE_BIRDVIEW_WIDTH, const.LANE_BIRDVIEW_HEIGHT))
